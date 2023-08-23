@@ -130,7 +130,7 @@ if [[ "$RUN_PROFESSOR_SCRIPT" == true ]] ; then
                 exit 1
             fi
         done
-        output=$(gcc -Wall -o $DIR_GAB_OBJ/prog $DIR_GAB_OBJ/*.o 2>&1)
+        output=$(gcc -Wall -o $DIR_GAB_OBJ/prog $DIR_GAB_OBJ/*.o -lm 2>&1)
         if [ $? -ne 0 ]; then 
             echo -e "   - Arquivos Linkados: Erro! Binário prog não gerado."
             TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}   - Arquivos Linkados: Erro! Binário prog não gerado.\n"
@@ -511,7 +511,7 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                     echo " - Pasta $src_file_dir:"
                     echo "   - Gerando o binário prog linkando com o(s) arquivo(s) $src_file_dir/*.o"
                     TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Pasta $src_file_dir:\n   - Gerando o binário prog linkando com o(s) arquivo(s) "$src_file_dir/\*.o"\n"
-                    gcc -o $STUDENT_RESULT_FOLDER/$src_file_dir/prog $STUDENT_RESULT_FOLDER/$src_file_dir/*.o 2>> $STUDENT_RESULT_FOLDER/$src_file_dir/result_linking.txt
+                    gcc -o $STUDENT_RESULT_FOLDER/$src_file_dir/prog $STUDENT_RESULT_FOLDER/$src_file_dir/*.o -lm 2>> $STUDENT_RESULT_FOLDER/$src_file_dir/result_linking.txt
                     if [ $? -ne 0 ]; then 
                         echo -e "   - Arquivos Linkados: Erro! Binário prog não gerado."
                         TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}   - Arquivos Linkados: Erro! Binário prog não gerado.\n"
