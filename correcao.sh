@@ -80,8 +80,10 @@ echo -e $TERMINAL_OUTPUT_LOG
 
 HEADER_FILES_EXIST=false
 # Use the find command to search for .h files within the folder
-if find "$DIR_GAB_SRC" -maxdepth 1 -type f -name "*.h" | read; then
-    HEADER_FILES_EXIST=true
+if test -d "$DIR_GAB_SRC"; then
+    if find "$DIR_GAB_SRC" -maxdepth 1 -type f -name "*.h" | read; then
+        HEADER_FILES_EXIST=true
+    fi
 fi
 
 if [[ "$RUN_PROFESSOR_SCRIPT" == true ]] ; then
@@ -181,6 +183,12 @@ fi
 
 if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
 
+    if test -d "$DIR_INCLUDES"; then
+        if find "$DIR_INCLUDES" -maxdepth 1 -type f -name "*.h" | read; then
+            HEADER_FILES_EXIST=true
+        fi
+    fi
+
     if [ "$HEADER_FILES_EXIST" = "true" ]; then
         if [ -d "$DIR_INCLUDES" ]; then
             if [ $(find "$DIR_INCLUDES" -maxdepth 1 -type f -name "*.h" | wc -l) -gt 0 ]; then
@@ -268,9 +276,16 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
     
     # Check if the folder exists and is a directory
     if [ -d "$DIR_RESPOSTAS" ]; then
+
+        if [ -z "$(ls -A $DIR_RESPOSTAS)" ]; then
+            echo " - Erro! Por favor, crie uma pasta com o seu nome dentro da pasta Respostas/, por exemplo Respostas/JoaoAugusto/ e dentro dessa pasta do seu nome coloque os seus arquivos do código fonte."
+            exit 1
+        fi
+
         if [ ! -d "$DIR_RESULTADOS" ]; then
             mkdir -p $DIR_RESULTADOS
         fi
+
         # Loop through all folders in the specified folder using 'find'
         while IFS= read -r -d '' STUDENT_ANSWER_FOLDER; do
             if [ -d "$STUDENT_ANSWER_FOLDER" ]; then
@@ -741,8 +756,9 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
             fi
         done < <(find "$DIR_RESPOSTAS" -mindepth 1 -type d -print0)
     else
-    echo "Arquivo não encontrado: $DIR_RESPOSTAS"
-    TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}Arquivo não encontrado: $DIR_RESPOSTAS\n"
+        echo -e "\nPasta não encontrada: $DIR_RESPOSTAS\n - Erro! Por favor, crie uma pasta chamada Respostas/ na raíz onde ta o Script e dentro desta pasta crie outra com o seu nome, por exemplo Respostas/JoaoAugusto/ e dentro dessa pasta do seu nome coloque os seus arquivos do código fonte."
+        TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}\nPasta não encontrada: $DIR_RESPOSTAS\n - Erro! Por favor, crie uma pasta chamada Respostas/ na raíz onde ta o Script e dentro desta pasta crie outra com o seu nome, por exemplo Respostas/JoaoAugusto/ e dentro dessa pasta coloque os seus arquivos do código fonte."
+        exit 1
     fi
 
     echo -e "\n#######################################"
@@ -860,10 +876,24 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
             
             student_average_grade=$(echo "scale=2; $student_grades_sum / $n_fields_to_consider" | bc)
             trimmed_grade_to_show="${student_grades_sum%?}"
+            if [ "$student_grades_sum" = "0" ]; then
+                trimmed_grade_to_show="0.00"
+            fi
             echo "  - Soma das notas do $student_name: $trimmed_grade_to_show"
             TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}  - Soma das notas do $student_name: $student_grades_sum\n"
-            echo "  - Campos Considerados: $n_fields_to_consider"
-            TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}  - Campos Considerados: $n_fields_to_consider\n"
+
+
+            integer_part=$(echo "$n_fields_to_consider" | awk -F. '{print $1}')
+            echo "  - Quantidade de notas: $integer_part"
+            TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}  - Campos Considerados: $integer_part\n"
+            
+            # integer_number=$(expr "$student_average_grade" + 0)
+            if [ "$student_average_grade" = "0" ]; then
+                student_average_grade="0.00"
+            elif (( $(echo "$student_average_grade < 1" | bc -l) )); then
+                student_average_grade="0""$student_average_grade"
+            fi
+
             echo "  - Média do $student_name: $student_average_grade"
             TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}  - Média do $student_name: $student_average_grade\n"
             content_csv_str=$content_csv_str",$student_average_grade"
