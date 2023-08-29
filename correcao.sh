@@ -130,6 +130,8 @@ if [[ "$RUN_PROFESSOR_SCRIPT" == true ]] ; then
                 exit 1
             fi
         done
+
+
         output=$(gcc -Wall -o $DIR_GAB_OBJ/prog $DIR_GAB_OBJ/*.o -lm 2>&1)
         if [ $? -ne 0 ]; then 
             echo -e "   - Arquivos Linkados: Erro! Binário prog não gerado."
@@ -149,6 +151,7 @@ if [[ "$RUN_PROFESSOR_SCRIPT" == true ]] ; then
 
     for DIR_CASE in "$DIR_GAB_CASOS"/*; do
         txt_input_file=$(find "$DIR_CASE" -maxdepth 1 -type f -name "*.txt" | head -n 1)
+        directory_path=$(dirname "$txt_input_file")
         filename=$(basename -- "$txt_input_file")   # Get only the file name without the full path
         filename_no_ext="${filename%.*}"  # Get only the file name without the extension
 
@@ -162,8 +165,12 @@ if [[ "$RUN_PROFESSOR_SCRIPT" == true ]] ; then
             rm $DIR_CASE/saida/*.txt
         fi
 
-        output="${DIR_CASE}/saida/out_${filename_no_ext}.txt"
-        $DIR_GAB_OBJ/prog < $txt_input_file > $output 2>&1
+        input_file=$directory_path/entrada.txt
+        # output="${DIR_CASE}/saida/out_${filename_no_ext}.txt"
+        output="${DIR_CASE}/saida/saida.txt"
+
+        # $DIR_GAB_OBJ/prog < $txt_input_file > $output 2>&1
+        $DIR_GAB_OBJ/prog $directory_path < $input_file > $output 2>&1
         echo " - Output do resultado do professor gerado com sucesso na pasta $output."
         TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Output do resultado do professor gerado com sucesso na pasta $output.\n"
     done
@@ -356,11 +363,11 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                         echo " - Diretório $FILE_NAME_FOLDER criado com sucesso!"
                         TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Diretório $FILE_NAME_FOLDER criado com sucesso!\n"
                     fi
-                    mkdir -p $FILE_NAME_FOLDER/test
-                    if test -d "$FILE_NAME_FOLDER/test"; then
-                        echo " - Diretório $FILE_NAME_FOLDER/test criado com sucesso!"
-                        TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Diretório $FILE_NAME_FOLDER/test criado com sucesso!\n"
-                    fi
+                    # mkdir -p $FILE_NAME_FOLDER/test
+                    # if test -d "$FILE_NAME_FOLDER/test"; then
+                    #     echo " - Diretório $FILE_NAME_FOLDER/test criado com sucesso!"
+                    #     TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Diretório $FILE_NAME_FOLDER/test criado com sucesso!\n"
+                    # fi
                 done
                 echo -e " - Arquivos criados: ok!"
                 TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Arquivos criados: ok!\n"
@@ -419,9 +426,9 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                     TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Pasta $src_file_name:\n"
                     FILE_NAME_FOLDER=$STUDENT_RESULT_FOLDER/$src_file_name
                     
-                    echo "   - Copiando os $DIR_GAB_CASOS de teste para a pasta $FILE_NAME_FOLDER/test"
-                    TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}   - Copiando os $DIR_GAB_CASOS de teste para a pasta $FILE_NAME_FOLDER/test\n"
-                    cp -r $DIR_GAB_CASOS $FILE_NAME_FOLDER/test
+                    echo "   - Copiando os $DIR_GAB_CASOS de teste para a pasta $FILE_NAME_FOLDER"
+                    TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}   - Copiando os $DIR_GAB_CASOS de teste para a pasta $FILE_NAME_FOLDER\n"
+                    cp -r $DIR_GAB_CASOS $FILE_NAME_FOLDER
 
                     if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f -name "*.h" | read; then
                         echo "   - Copiando os $STUDENT_ANSWER_FOLDER/*.h do aluno para a pasta $FILE_NAME_FOLDER"
@@ -540,7 +547,7 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                     echo -e "\nEXECUTANDO O VALGRIND EM CADA CASO:"
                     TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}\nEXECUTANDO O VALGRIND EM CADA CASO:\n"
                     for src_file_dir in "${src_files_names[@]}"; do
-                        DIR_CASES=$STUDENT_RESULT_FOLDER/$src_file_dir/test/Casos
+                        DIR_CASES=$STUDENT_RESULT_FOLDER/$src_file_dir/Casos
                         n_cases_folders=0
                         n_correct_answers=0
                         n_correct_valgrinds=0
@@ -562,15 +569,19 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                             # output=$(valgrind $valgrind_args $binary < $DIR_CASE/in.txt > "$DIR_CASE/saida/out.txt" 2>&1)
                             
                             txt_input_file=$(find "$DIR_CASE" -maxdepth 1 -type f -name "*.txt" | head -n 1)
+                            directory_path=$(dirname "$txt_input_file")
                             filename=$(basename -- "$txt_input_file")   # Get only the file name without the full path
                             filename_no_ext="${filename%.*}"  # Get only the file name without the extension
-                            output="${DIR_CASE}/saida/out_${filename_no_ext}.txt"
+                            # output="${DIR_CASE}/saida/out_${filename_no_ext}.txt"
+                            output="${DIR_CASE}/saida/saida.txt"
+                            input_file=$directory_path/entrada.txt
                             # echo "GErando output: $output"
                             filename_out=$(basename -- "$output")   # Get only the file name without the full path
 
                             binary=$STUDENT_RESULT_FOLDER/$src_file_dir/prog
                             valgrind_args="--leak-check=full --log-file=$DIR_CASE/result_valgrind.txt"
-                            output=$(timeout 5 valgrind $valgrind_args $binary < $txt_input_file > $output 2>&1)
+                            # output=$(timeout 5 valgrind $valgrind_args $binary < $txt_input_file > $output 2>&1)
+                            output=$(timeout 5 valgrind $valgrind_args $binary $directory_path < $input_file > $output 2>&1)
                             # echo "output: $output"
                             # output=$(valgrind $valgrind_args $binary < $DIR_CASE/in.txt > "out.txt" 2>&1)
 
