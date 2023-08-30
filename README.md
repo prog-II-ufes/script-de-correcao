@@ -14,6 +14,7 @@ Para executar o script rode no terminal:
     $ ./correcao.sh
 
 Depois que executar, o script irá:
+
  1. Verificar se o aluno fez todos os arquivos fonte corretamente com o mesmo nome que foi solicitado.
  2. Compilar o código do aluno e checkar se tem erros de compilação.
  3. Linkar os arquivos objetos (.o) com os do professor que estão na pasta "Gabarito-obj/" para checkar se tem erros de linkagem.
@@ -23,6 +24,7 @@ Depois que executar, o script irá:
  7. Dar uma nota final para o aluno gerando um arquivo chamado "Resultado.csv" na rapiz da pasta do exemplo.
 
 Então note que, toda vez que você quiser testar algum código que você fez de algum exercício, faça o seguinte:
+
  1. Crie uma pasta para o seu exercício.
  2. Verifique se vc possui a pasta "Casos/" com os entradas e resultados do exercicio, e copie ela para dentro da pasta para o seu exercício.
  3. Verifique se vc possui a pasta "Gabarito-obj/" com os objetos (.o) do professor, e copie ela dentro da pastado o seu exercício.
