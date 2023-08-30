@@ -11,26 +11,26 @@ Dentro desta pasta existem 4 outras pastas:
 
 Copie o script "correcao.sh" que está na pasta raíz do repositório para dentro dessa pasta "exercicio_exemplo_soma/"
 Para executar o script rode no terminal:
-      ./correcao.sh
+    $ ./correcao.sh
 
 Depois que executar, o script irá:
- 1 - Verificar se o aluno fez todos os arquivos fonte corretamente com o mesmo nome que foi solicitado.
- 2 - Compilar o código do aluno e checkar se tem erros de compilação.
- 3 - Linkar os arquivos objetos (.o) com os do professor que estão na pasta "Gabarito-obj/" para checkar se tem erros de linkagem.
- 4 - Executar com valgrind o binário gerado pela compilação do código do aluno.
- 5 - Checkar se os resultados da execução bateram com os resultados da pasta "Casos/" na raíz do exemplo.
- 6 - Checkar se tiveram erros de valgrind, como alocação de memória sem free.
- 7 - Dar uma nota final para o aluno gerando um arquivo chamado "Resultado.csv" na rapiz da pasta do exemplo.
+ 1. Verificar se o aluno fez todos os arquivos fonte corretamente com o mesmo nome que foi solicitado.
+ 2. Compilar o código do aluno e checkar se tem erros de compilação.
+ 3. Linkar os arquivos objetos (.o) com os do professor que estão na pasta "Gabarito-obj/" para checkar se tem erros de linkagem.
+ 4. Executar com valgrind o binário gerado pela compilação do código do aluno.
+ 5. Checkar se os resultados da execução bateram com os resultados da pasta "Casos/" na raíz do exemplo.
+ 6. Checkar se tiveram erros de valgrind, como alocação de memória sem free.
+ 7. Dar uma nota final para o aluno gerando um arquivo chamado "Resultado.csv" na rapiz da pasta do exemplo.
 
 Então note que, toda vez que você quiser testar algum código que você fez de algum exercício, faça o seguinte:
- 1 - Crie uma pasta para o seu exercício.
- 2 - Verifique se vc possui a pasta "Casos/" com os entradas e resultados do exercicio, e copie ela para dentro da pasta para o seu exercício.
- 3 - Verifique se vc possui a pasta "Gabarito-obj/" com os objetos (.o) do professor, e copie ela dentro da pastado o seu exercício.
- 4 - Verifique se vc possui a pasta "Includes/" com os arquivos header (.h) do professor e copie ela dentro da pastado o seu exercício. (note que não é necessário ter arquivos dentro dessa pasta caso o código do professor não tenha .h)
- 5 - Crie uma pasta "Respostas/", e dentro dessa pasta crie outra pasta com o seu nome, sem espaços, por exemplo "Respostas/FernandoMoreira/", como está no exercicio exemplo. 
- 6 - Coloque todos os seus arquivos do código fonte dentro dessa pasta com seu nome.
- 7 - Copie o script "correcao.sh" para dentro da pasta raíz do seu exercício.
- 8 - Execute no terminal: ./correcao.sh
+ 1. Crie uma pasta para o seu exercício.
+ 2. Verifique se vc possui a pasta "Casos/" com os entradas e resultados do exercicio, e copie ela para dentro da pasta para o seu exercício.
+ 3. Verifique se vc possui a pasta "Gabarito-obj/" com os objetos (.o) do professor, e copie ela dentro da pastado o seu exercício.
+ 4. Verifique se vc possui a pasta "Includes/" com os arquivos header (.h) do professor e copie ela dentro da pastado o seu exercício. (note que não é necessário ter arquivos dentro dessa pasta caso o código do professor não tenha .h)
+ 5. Crie uma pasta "Respostas/", e dentro dessa pasta crie outra pasta com o seu nome, sem espaços, por exemplo "Respostas/FernandoMoreira/", como está no exercicio exemplo. 
+ 6. Coloque todos os seus arquivos do código fonte dentro dessa pasta com seu nome.
+ 7. Copie o script "correcao.sh" para dentro da pasta raíz do seu exercício.
+ 8. Execute no terminal: ./correcao.sh
 
 ## Explicação Detalhada ##
 Este script serve para corrigir exercícios e trabalhos de alunos para a linguagem C.
