@@ -6,7 +6,7 @@ Para executar o Script existe uma pasta com um exercício de exemplo, "exercicio
 Dentro desta pasta existem 4 outras pastas: 
   - Casos: esta pasta contem os casos de teste com as entradas e as saídas para cada caso.
   - Gabarito-obj: esta pasta contem os arquivos objetos (.o) do código correto feito pelo professor (não está disponível).
-  - Includes: esta pasta contem os arquivos header (.o) do código correto feito pelo professor.
+  - Includes: esta pasta contem os arquivos header (.h) do código correto feito pelo professor.
   - Respostas: esta pasta é a pasta que contém a resposta do aluno. Dentro dela tem um exemplo de código do aluno FernandoMoreira.
 
 Copie o script "correcao.sh" que está na pasta raíz do repositório para dentro dessa pasta "exercicio_exemplo_soma/"
