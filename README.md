@@ -9,7 +9,8 @@ Dentro desta pasta existem 4 outras pastas:
   - Includes: esta pasta contem os arquivos header (.h) do código correto feito pelo professor.
   - Respostas: esta pasta é a pasta que contém a resposta do aluno. Dentro dela tem um exemplo de código do aluno FernandoMoreira.
 
-Copie o script "correcao.sh" que está na pasta raíz do repositório para dentro dessa pasta "exercicio_exemplo_soma/"
+Copie o script "correcao.sh" que está na pasta raíz do repositório para dentro dessa pasta "exercicio_exemplo_soma/".
+
 Para executar o script rode no terminal:
     $ ./correcao.sh
 
