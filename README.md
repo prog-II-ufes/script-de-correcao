@@ -27,7 +27,7 @@ Depois que executar, o script irá:
 Então note que, toda vez que você quiser testar algum código que você fez de algum exercício, faça o seguinte:
 
  1. Crie uma pasta para o seu exercício.
- 2. Verifique se vc possui a pasta "Casos/" com os entradas e saídas do exercicio, e copie ela para dentro da pasta do seu exercício.
+ 2. Verifique se vc possui a pasta "Casos/" com as entradas e saídas do exercicio, e copie ela para dentro da pasta do seu exercício.
  3. Verifique se vc possui a pasta "Gabarito-obj/" com os objetos (.o) do professor, e copie ela dentro da pasta do seu exercício.
  4. Verifique se vc possui a pasta "Includes/" com os arquivos header (.h) do professor e copie ela dentro da pasta do seu exercício. (note que não é necessário ter arquivos dentro dessa pasta caso o código do professor não tenha .h)
  5. Crie uma pasta "Respostas/", e dentro dessa pasta crie outra pasta com o seu nome, sem espaços, por exemplo "Respostas/FernandoMoreira/", como está no exercicio exemplo. 
