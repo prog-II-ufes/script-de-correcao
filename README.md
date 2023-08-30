@@ -1,6 +1,6 @@
 # Script de Correção #
 
-Este repositório contém o script de correção dos exercícios e trabalhos da disciplina de Programação II. O script foi desenvolvido para funcionar com a linguagem de programação C e a idea é que todos tenham acesso e o utilizem para correção de todas as atividades realizadas ao longo da disciplina.
+Este repositório contém o script :shipit: de correção dos exercícios e trabalhos da disciplina de Programação II. O script foi desenvolvido para funcionar com a linguagem de programação C e a idea é que todos tenham acesso e o utilizem para correção de todas as atividades realizadas ao longo da disciplina.
 
 Este README é dividido em duas partes. A primeira explica de forma detalhada como o script deve ser utilizado para correção dos exercícios e trabalhos. A segunda parte é um tutorial de como o script funciona e como professores e monitores devem utilizá-lo para gerar as atividades.
 
@@ -11,6 +11,10 @@ ___
 ## Tutorial rápido de utilização ##
 
 Para facilitar a explicação neste tutorial, este repositório possui uma pasta com um exercício de exemplo chamada `exercicio_exemplo_soma/`. É ela que será utilizada para explicar os principais pontos de atualização.
+
+___
+:movie_camera: **Vídeo:** caso você prefira, existe um tutorial em vídeo explicando a utilização do script para os alunos da disciplina. [Para acessar o vídeo clique aqui](https://drive.google.com/file/d/16ocpaWpCtXL1DWVhtOPikc7QPd-tLe8T/view).
+___
 
 Dentro desta pasta existem 4 outras pastas: 
   - `Casos`: contém os casos de teste com as entradas e as saídas para cada caso.
@@ -27,7 +31,7 @@ Agora, abra um terminal na pasta do exercício e execute o script com o comando
 ./correcao.sh
 ```
 
-**Importante:** caso seja exibido um erro de permissão, você deve executar o comando `chmod +x correcao.sh` para dar permissão de execução ao script.
+:red_circle: **Importante:** caso seja exibido um erro de permissão, você deve executar o comando `chmod +x correcao.sh` para dar permissão de execução ao script.
 
 Depois que executar, o script irá fazer o seguinte:
 
