@@ -172,7 +172,8 @@ if [[ "$RUN_PROFESSOR_SCRIPT" == true ]] ; then
         output="${DIR_CASE}/saida/saida.txt"
 
         # $DIR_GAB_OBJ/prog < $txt_input_file > $output 2>&1
-        $DIR_GAB_OBJ/prog $directory_path < $input_file > $output 2>&1
+        $DIR_GAB_OBJ/prog $directory_path < $input_file 2>&1
+        mv *.txt $DIR_CASE/saida/
         echo " - Output do resultado do professor gerado com sucesso na pasta $output."
         TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG} - Output do resultado do professor gerado com sucesso na pasta $output.\n"
     done
@@ -603,6 +604,7 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                                 output=$(timeout 5 $binary $directory_path < $input_file > $output 2>&1)
                             fi
 
+                            find "." -maxdepth 1 -type f -name "*.txt" ! -name "log.txt" -exec mv {} "${DIR_CASE}/saida/" \;
                             # echo "output: $output"
                             # output=$(valgrind $valgrind_args $binary < $DIR_CASE/in.txt > "out.txt" 2>&1)
 
