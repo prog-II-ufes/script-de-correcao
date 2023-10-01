@@ -595,7 +595,7 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                             filename_out=$(basename -- "$output")   # Get only the file name without the full path
 
                             binary=$STUDENT_RESULT_FOLDER/$src_file_dir/prog
-                            valgrind_args="--leak-check=full --log-file=$DIR_CASE/result_valgrind.txt"
+                            valgrind_args="--leak-check=full --track-origins=yes --log-file=$DIR_CASE/result_valgrind.txt"
                             # output=$(timeout 5 valgrind $valgrind_args $binary < $txt_input_file > $output 2>&1)
 
                             if [ "$IGNORE_VALGRIND" = "false" ]; then
@@ -634,12 +634,12 @@ if [[ "$RUN_STUDENT_SCRIPT" == true ]] ; then
                                         fi
                                     done < "$valgrind_result_file"
 
-                                    if [[ -f $valgrind_result_file ]]; then 
-                                        rm -r $valgrind_result_file
-                                    fi
+                                    # if [[ -f $valgrind_result_file ]]; then 
+                                    #     rm -r $valgrind_result_file
+                                    # fi
 
-                                    echo "Test Case: $DIR_CASE" >> $valgrind_result_file
-                                    echo "Valgrind result: allocs: $allocs frees: $frees errors: $errors contexts: $contexts" >> $valgrind_result_file
+                                    # echo "Test Case: $DIR_CASE" >> $valgrind_result_file
+                                    # echo "Valgrind result: allocs: $allocs frees: $frees errors: $errors contexts: $contexts" >> $valgrind_result_file
                                     if test "$allocs" = "$frees" && test "$errors" = "0"; then
                                         echo "   - Valgrind: Ok! allocs: $allocs, frees: $frees, errors: $errors"
                                         TERMINAL_OUTPUT_LOG="${TERMINAL_OUTPUT_LOG}   - Valgrind: Ok! allocs: $allocs, frees: $frees, errors: $errors.\n"
