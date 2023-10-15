@@ -1,0 +1,7 @@
+saida.txt=10.0
+
+soma.h=8
+completo=1.0
+main=1.0
+
+valgrind=0.3
