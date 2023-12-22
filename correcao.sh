@@ -24,6 +24,8 @@ IGNORE_VALGRIND=true
 IGNORE_RESULTS=false
 FIXED_INTERFACE=false
 MAIN_AGRUPADA=false
+REDIRECT_STDOUT=true
+CONTINUE_RESULTS=false
 TERMINAL_OUTPUT_LOG=""
 peso_total_arquivos=0
 config_file_names=()
@@ -38,6 +40,7 @@ n_files=0
 n_cases=0
 n_linkings=0
 TIMEOUT=5
+ARQ_ALUNO_SAIDA="resultado.txt"
 
 echo_e_salva_log() {
     echo -e "$1"
@@ -139,6 +142,14 @@ le_arq_config () {
                 readarray -d= -t lines < <(printf '%s' "$line")
                 TIMEOUT=${lines[1]}
                 continue
+            elif [[ "$line" ==  "NaoRedirecionaStdOut" ]]; then
+                config_section=0
+                REDIRECT_STDOUT=false
+                continue
+            elif [[ "$line" ==  "ContinuaCorrecao" ]]; then
+                config_section=0
+                CONTINUE_RESULTS=true
+                continue    
             elif [[ "$line" ==  "MainAgrupada" ]]; then
                 MAIN_AGRUPADA=true
                 continue
@@ -178,6 +189,14 @@ le_arq_config () {
         exit 1
     fi
 
+    if [[ " ${config_file_names[*]} " =~ " saida.txt " ]]; then
+        if [ $REDIRECT_STDOUT = false ]; then
+            echo "- O arquivo \"saida.txt\" é gerado através do redirecionamento da saída padrão, que está desativada."
+            echo "- Retire o \"saida.txt\" dos arquivos OU desative a opção \"NaoRedirecionaStdOut\"."
+            exit 1
+        fi
+    fi
+
     if [[ -z ${config_file_names} ]]; then
         echo "- Defina ao menos um arquivo de saida a ser comparado pelo script! "
         exit 1
@@ -202,7 +221,8 @@ le_arq_config () {
 }
 
 calcula_nota_final() {
-    for nome_aluno in ${nomes_alunos[@]}; do
+    # for nome_aluno in ${nomes_alunos[@]}; do
+        nome_aluno=$1
         string_nota_bc_aluno[$nome_aluno]=$string_nota_bc
         for value in "${config_test_names[@]}"
         do
@@ -210,7 +230,29 @@ calcula_nota_final() {
         done
         # echo $string_nota_bc
         nota_final_aluno[$nome_aluno]=$(echo "scale=2; ${string_nota_bc_aluno[$nome_aluno]}" | bc -l)
+    # done
+}
+
+cria_arquivo_resultado_aluno() {
+    nome_aluno=$1
+    STUDENT_RESULT_FOLDER=${DIR_RESULTADOS}/$student_name
+    ARQ_ALUNO=$STUDENT_RESULT_FOLDER/$ARQ_ALUNO_SAIDA
+    echo "Arquivos Esperados Corretos: ${stats_alunos[$nome_aluno,arquivos_corretos]} de $n_files" >> $ARQ_ALUNO
+    echo "Pastas Compiladas Corretamente: ${stats_alunos[$nome_aluno,compilacoes_corretas]} de ${#config_test_names[@]} " >> $ARQ_ALUNO
+    echo "Pastas Linkadas Corretamente: ${stats_alunos[$nome_aluno,linkagens_corretas]} de ${#config_test_names[@]}" >> $ARQ_ALUNO
+    for nome_teste in ${config_test_names[@]}; do
+        echo "Teste $nome_teste" >> $ARQ_ALUNO
+        num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
+        if [ "$IGNORE_RESULTS" = "false" ]; then
+            echo "  - Resultados corretos: ${stats_alunos[$nome_aluno,$nome_teste,saidas_certas]} de $num_total_arquivos" >> $ARQ_ALUNO
+        fi
+        if [ "$IGNORE_VALGRIND" = "false" ]; then
+            echo "  - Valgrinds corretos: ${stats_alunos[$nome_aluno,$nome_teste,valgrinds_certos]} de $n_cases" >> $ARQ_ALUNO
+        fi
+        echo "Nota de $nome_aluno para o teste $nome_teste: ${notas_testes[$nome_aluno,$nome_teste]}" >> $ARQ_ALUNO
     done
+    echo "Nota de $nome_aluno: ${string_nota_bc_aluno[$nome_aluno]}" >> $ARQ_ALUNO
+    echo "Nota de $nome_aluno: ${nota_final_aluno[$nome_aluno]}" >> $ARQ_ALUNO
 }
 
 imprime_resultados_e_cria_csv() {
@@ -539,6 +581,8 @@ executa_aluno() {
         if [ -d "$STUDENT_ANSWER_FOLDER" ]; then
             (( iteration++ ))
 
+            
+
             # Get the student name
             delimiter="/" # Set the delimiter
             original_IFS="$IFS" # Save the old IFS
@@ -551,6 +595,61 @@ executa_aluno() {
             echo_e_salva_log "#######################################\n"
 
             nomes_alunos+=($student_name)
+
+            if [ -f ${DIR_RESULTADOS}/$student_name/$ARQ_ALUNO_SAIDA ] && [ $CONTINUE_RESULTS == true ]; then
+                echo_e_salva_log "  - Configuração 'ContinuaAnalise' ligada e pasta $student_name já foi processada. Passando para o próximo aluno..."
+                sscanf() { #https://stackoverflow.com/a/65055661
+                    local str="$1"
+                    local format="$2"
+                    [[ "$str" =~ $format ]]
+                }
+
+                lines=()
+                while IFS= read -r line
+                do
+                    lines+=("$line")
+                done < "${DIR_RESULTADOS}/$student_name/$ARQ_ALUNO_SAIDA"
+                index=0
+
+                sscanf "${lines[index]}" "Arquivos Esperados Corretos: (.*) de (.*)"
+                stats_alunos["$student_name,arquivos_corretos"]=${BASH_REMATCH[1]}
+                (( index++ ))
+                sscanf "${lines[index]}" "Pastas Compiladas Corretamente: (.*) de (.*)"
+                stats_alunos["$student_name,compilacoes_corretas"]=${BASH_REMATCH[1]}
+                (( index++ ))
+                sscanf "${lines[index]}" "Pastas Linkadas Corretamente: (.*) de (.*)"
+                stats_alunos["$student_name,linkagens_corretas"]=${BASH_REMATCH[1]}
+                (( index++ ))
+                for (( num_test=1; num_test<=${#config_test_names[@]} ; num_test ++ )); do
+                    sscanf "${lines[index]}" "Teste (.*)"
+                    nome_teste=${BASH_REMATCH[1]}
+                    (( index++ ))
+                    if [ "$IGNORE_RESULTS" = "false" ]; then
+                        sscanf "${lines[index]}" "  - Resultados corretos: (.*) de (.*)"
+                        stats_alunos["$student_name,$nome_teste,saidas_certas"]=${BASH_REMATCH[1]}
+                        num_total_arquivos=${BASH_REMATCH[2]}
+                        (( index++ ))
+                    fi
+                    if [ "$IGNORE_VALGRIND" = "false" ]; then
+                        sscanf "${lines[index]}" "  - Valgrinds corretos: (.*) de (.*)"
+                        stats_alunos["$student_name,$nome_teste,valgrinds_certos"]=${BASH_REMATCH[1]}
+                        (( index++ ))
+                    fi
+                    sscanf "${lines[index]}" "Nota de (.*) para o teste (.*): (.*)"
+                    notas_testes["$student_name,$nome_teste"]=${BASH_REMATCH[3]}
+                    (( index++ ))
+                done
+                sscanf "${lines[index]}" "Nota de (.*): (.*)"
+                string_nota_bc_aluno["$student_name"]=${BASH_REMATCH[2]}
+                (( index++ ))
+                sscanf "${lines[index]}" "Nota de (.*): (.*)"
+                nota_final_aluno["$student_name"]=${BASH_REMATCH[2]}
+                (( index++ ))
+                
+                continue
+            fi
+
+            
 
             ##########################################
             # criando os diretorios de resultados para cada aluno
@@ -820,9 +919,17 @@ executa_aluno() {
                         valgrind_args="--leak-check=full --log-file=$DIR_CASE/result_valgrind.txt"
 
                         if [ "$IGNORE_VALGRIND" = "false" ]; then
-                            run_output=$(timeout $TIMEOUT valgrind $valgrind_args $binary $DIR_CASE < $input_file > $outputStdOut 2>&1)
+                            if [ "$REDIRECT_STDOUT" = true ]; then
+                                run_output=$(timeout -s 9 $TIMEOUT valgrind $valgrind_args $binary $DIR_CASE < $input_file > $outputStdOut 2>&1)
+                            else
+                                run_output=$(timeout -s 9 $TIMEOUT valgrind $valgrind_args $binary $DIR_CASE < $input_file > /dev/null 2>&1)
+                            fi
                         else
-                            run_output=$(timeout $TIMEOUT $binary $DIR_CASE < $input_file > $outputStdOut 2>&1)
+                            if [ "$REDIRECT_STDOUT" = true ]; then
+                                run_output=$(timeout -s 9 $TIMEOUT $binary $DIR_CASE < $input_file > $outputStdOut 2>&1)
+                            else
+                                run_output=$(timeout -s 9 $TIMEOUT $binary $DIR_CASE < $input_file > /dev/null 2>&1)
+                            fi
                         fi
 
                         valgrind_desconto_percent=$(echo "scale=2; $valgrind_desconto * 100.0" | bc)
@@ -987,8 +1094,13 @@ executa_aluno() {
                     stats_alunos["$student_name,$src_file_dir,valgrinds_certos"]=$n_correct_valgrinds
                 done
             fi
+
+            calcula_nota_final $student_name
+            cria_arquivo_resultado_aluno $student_name
+
         fi
-    done < <(find "$DIR_RESPOSTAS" -mindepth 1 -type d -print0)
+        
+    done < <(find "$DIR_RESPOSTAS" -mindepth 1 -type d -print0 | sort -z)
 }
 
 if [[ $1 == "--professor" ]]; then
@@ -1001,7 +1113,7 @@ if [[ $RUN_PROFESSOR_SCRIPT == true ]]; then
     executa_professor
 else
     executa_aluno
-    calcula_nota_final
+    # calcula_nota_final
     imprime_resultados_e_cria_csv
     salva_json_saida
     # le_saida_script_correcao

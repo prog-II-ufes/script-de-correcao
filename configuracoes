@@ -41,23 +41,36 @@
 #
 # A opção "MainAgrupada" define que o professor quer agrupar todos os TADs não listados na seção "Validações" em um arquivo objeto único "main.o".
 # Essa opção é mais utilizada em Trabalhos e tem duas características:
-# 1) Não deve ser usada com a opção InterfaceFixa - O aluno irá implementar as coisas que estão agrupadas na main.o do jeito dele, e portanto o script deve aceitar arquivos de interface não esperados.
-# 2) O aluno não pode alterar nem incluir nada "extra" (includes apenas de bibliotecas do C) nas implementações dos TADs listados em "Validações". Caso contrário a chance de dar "múltiplas definições" de funções será alta.
+# 1)    Não deve ser usada com a opção InterfaceFixa - O aluno irá implementar as coisas que estão agrupadas na main.o do jeito dele, e portanto o
+#       script deve aceitar arquivos de interface não esperados.
+# 2)    O aluno não pode alterar nem incluir nada "extra" (includes apenas de bibliotecas do C) nas implementações dos TADs listados em "Validações".
+#       Caso contrário a chance de dar "múltiplas definições" de funções será alta.
+#
+# A opção "ContinuaCorrecao" diz para o script continuar a correção de onde parou, avaliando apenas os que ainda não foram avaliados.
+# O indicativo que a avaliação de um aluno foi finalizada é a existência de um arquivo resultados.txt na pasta
+# Resultados/nome_do_aluno. Caso essa opção não exista no arquivo de configurações (ou esteja comentada), os códigos de todas as subpastas
+# presentes na pasta Respostas serão avaliados.
+#
+# A opção "NaoRedirecionaStdOut" serve para dizer para o script não gerar um arquivo de saida.txt com a saída padrão.
+# Cuidado, se essa opção estiver presente (e não comentada) no arquivo de configurações, e o programa avaliar o arquivo "saida.txt"
+# (Na seção Arquivos) o script não irá executar. Caso ela esteja presente, toda a saída padrão será descartada.
+
+
 
 Arquivos
-    #saida.txt=0.0
-    receita.txt=1.0
-    biopsia.txt=1.0
-    encaminhamento.txt=1.0
-    lista_busca.txt=3.0
-    relatorio_geral.txt=4.0
+    saida.txt=10.0
+#    receita.txt=1.0
+#    biopsia.txt=1.0
+#    encaminhamento.txt=1.0
+#    lista_busca.txt=3.0
+#    relatorio_geral.txt=4.0
 
 Validações
-    main=7.5
-    tDocumento=1.0
-    tFila=1.0
-    tReceita=0.5
-    completo=0.0
+#    main=7.5
+#    tDocumento=1.0
+#    tFila=1.0
+#    tReceita=0.5
+    completo=10.0
 
 Valgrind
     desconto=0.4 # 40% de desconto se vazar memoria
@@ -69,4 +82,6 @@ Valgrind
 #IgnoraResultados
 #InterfaceFixa
 LimiteTempo=30
-MainAgrupada
+#MainAgrupada
+#ContinuaCorrecao
+#NaoRedirecionaStdOut
