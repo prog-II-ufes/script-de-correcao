@@ -1,0 +1,11 @@
+
+Arquivos    
+    saida.txt=10.0
+
+Validações
+    soma.h=8
+    completo=1.0
+    main=1.0
+
+Valgrind
+    desconto=0.3
