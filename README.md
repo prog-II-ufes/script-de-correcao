@@ -59,7 +59,7 @@ Então note que, toda vez que você quiser testar algum código que você fez de
  5. Copie o script `correcao.sh` para dentro da pasta raíz do seu exercício.
  6.  Execute o script no terminal com o comando `./correcao.sh`
 
-## Explicação Detalhada ##
+## Explicação Detalhada
 
 Para o funcionamento correto do script, três requisitos precisam ser cumpridos.
 
@@ -91,12 +91,25 @@ Para o funcionamento correto do script, três requisitos precisam ser cumpridos.
             *.c
             *.h
         - correcao.sh
+        - configuracoes
 
-Onde `Gabarito-src/` é a pasta onde estará o código fonte provido pelo professor com os arquivos .h e os .c do trabalho ou exercício. 
+Na qual:
 
-A pasta `Casos/`, são os casos de teste com entradas que serão usadas para gerar as saídas correspondentes ao caso de teste, ou seja, o script fará com que primeiramente o código dentro de `Gabarito-src/` use os casos para gerarem os resultados.
+- `Gabarito-src/` é a pasta onde estará o código fonte provido pelo professor com os arquivos `.h` e os `.c` do trabalho ou exercício. 
 
-O arquivo `correcao.sh` é o script propriamente dito que deve ser executado no terminal.
+- A pasta `Casos/`, são os casos de teste com entradas que serão usadas para gerar as saídas correspondentes ao caso de teste, ou seja, o script fará com que primeiramente o código dentro de `Gabarito-src/` use os casos para gerarem os resultados.
+
+- O arquivo `correcao.sh` é o script propriamente dito que deve ser executado no terminal.
+
+- O arquivo `configuracoes` é um arquivo de configuração que pode ser utilizado para definir algumas variáveis que o script utiliza. Por exemplo, quais arquivos devem ser usados para avaliação, qual o peso de cada arquivo, limite de tempo de execução, etc. Para mais informações, consulte os comentários disponíveis no arquivo `configuracoes` deste repositório.
+
+____
+**Importante:**
+- Se for atribuído pontuação para opção `main` dentro do arquivo de `configuracao`, o script irá verificar se a `main` do aluno funciona corretamente junto com o código do professor.
+- Se for atribuído pontuação para opção `completo` dentro do arquivo de `configuracao`, o script irá verificar se o código do aluno funciona independente do código do professor. Em outras palavras, ele apenas verifica se o código do aluno está correto e se ele passa nos testes.
+____
+
+ 
 
 #### Executando o script
 
@@ -104,7 +117,7 @@ Como já descrito anteriormente, para executar o script, basta abrir um terminal
 
 O script possui 4 parâmetros de execução:
 
-  1. **`--professor`:**  Ao executar `./correcao.sh --professor`, o script irá compilar e executar o código dentro da pasta `Gabarito-src/` utilizando as entradas dentro da pasta `Casos/`. Assim todos os resultados dos casos serão gerados em uma pasta `saida/` dentro de cada caso. Além disso, uma pasta `Includes/` também será criada e os `.h` do professor dentro da pasta `Gabarito-src/` serão copiados para lá. Uma pasta `Gabarito-obj/` também será criada com os `.o` e o binário `prog` gerados pela compilação. **Dessa forma, a primeira execução do script deverá ser utilizando o parâmetro `--professor`.** Então a hierarquia do diretório ficará da seguinte forma:
+  1. **`--professor`:**  de maneira geral, essa opção deve ser utilizada para gerar todos os fontes do exercício. Normalmente, quem usa é o professor ou monitor. Ao executar `./correcao.sh --professor`, o script irá compilar e executar o código dentro da pasta `Gabarito-src/` utilizando as entradas dentro da pasta `Casos/`. Assim todos os resultados dos casos serão gerados em uma pasta `saida/` dentro de cada caso. Além disso, uma pasta `Includes/` também será criada e os `.h` do professor dentro da pasta `Gabarito-src/` serão copiados para lá. Uma pasta `Gabarito-obj/` também será criada com os `.o` e o binário `prog` gerados pela compilação. **Dessa forma, a primeira execução do script deverá ser utilizando o parâmetro `--professor`.** Então a hierarquia do diretório ficará da seguinte forma:
 
             - ScriptCorrecao/
                 - Casos/
@@ -133,14 +146,15 @@ O script possui 4 parâmetros de execução:
                 - Includes/
                     *.h
                 - correcao.sh
+                - configuracoes
 
-  2. **`--interfacefixa`:**
+  3. **`--interfacefixa`:**
     Ao executar `./correcao.sh --interfacefixa`, o script irá verificar se o aluno criou a mesma quantidade de arquivos `.c` e `.h` correspontente ao professor, como também se os nomes dos arquivos são os mesmos, assim caso o aluno tenha criado algum `.c` a mais, ele será desconsiderado na compilação e provavelmente erros de linkagem irão acontecer. Caso o script seja rodado sem esse parâmetro, e se o aluno criou algum `.c` a mais, então esse arquivo será considerado na compilação, porém se der erro de compilação, erro de valgrind ou erro de resultado, o aluno será penalizado.
 
-  3. **`--resultados`:**
+  4. **`--resultados`:**
     - Ao executar `./correcao.sh --resultados`, o script irá desconsiderar se o aluno errou algum resultado de output, assim qualquer erro desse tipo não será considerado na nota.
 
-  4. **`--valgrind`:**
+  5. **`--valgrind`:**
     - Ao rodar `./correcao.sh --valgrind`, o script irá desconsiderar se o aluno obteve algum erro de alocação de memória ou algo do tipo, assim qualquer erro desse tipo não será considerado na nota.
 
 Após executar o script com o parâmetro `--professor`, a pasta com o código dos alunos deverá ser criada manualmente com o nome `Respostas/` e dentro dessa pasta, terá as pastas com os nomes os alunos (sem espaço) e o código fonte deles. Assim a hierarquia do diretório ficará da seguinte forma:
@@ -214,7 +228,8 @@ Resumindo, o script verifica:
  - Linka os objetos para gerar os executaveis, e vê se teve erros de linkagem.
  - Executa com valgrind os binários utilizando as entradas na pasta `Casos/`, verifica erros de valgrind e erros de resultado comparando com as saídas do professor.
 
-Por fim, um arquivo 'Resultado.csv' é gerado no final com o nome de cada aluno e suas respectivas notas para cada quesito.
+
+Por fim, um arquivo `Resultado.csv` é gerado no final com o nome de cada aluno e suas respectivas notas para cada quesito.
 
 Assim a hierarquia final do diretório ficará da seguinte forma:
 
