@@ -1,0 +1,42 @@
+v3:
+
+- mais correção de bugs
+- adiciona suporte a casos com pesos diferentes
+- adiciona suporte a casos que avaliam grupos de arquivos difernetes
+- Inspirado na correção padrão do BOCA, a v3 do script agora faz uma avaliação que ignora algumas diferenças mínimas, como espaços em branco, novas linhas ao final, etc.
+
+
+v2:
+
+A v2 conserta alguns bugs e adiciona suporte a arquivos zip com pastas e makefile
+
+Antes, o zip podia conter apenas os .c/.h, etc.
+
+Agora, ele pode conter a seguinte estrutura:
+
+solucao.zip
+    - pasta1/
+        - main.c
+        - tad1.c
+        - tad1.h
+    - pasta2/
+        - tad2.c
+        - tad2.h
+    - Makefile
+
+Makefile deve ter duas regras:
+
+objs - gera os arquivos objeto na mesma pasta do Makefile
+all - gera o binário na mesma pasta do Makefile
+
+(Ver exemplo)
+
+Caso tenha a estrutura de pastas, o Makefile deve existir. Caso contrário, o zip enviado deve conter APENAS ARQUIVOS:
+
+solucao.zip
+    - main.c
+    - tad1.c
+    - tad1.h
+
+
+v1: release inicial

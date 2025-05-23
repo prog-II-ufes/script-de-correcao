@@ -55,6 +55,26 @@
 # Cuidado, se essa opção estiver presente (e não comentada) no arquivo de configurações, e o programa avaliar o arquivo "saida.txt"
 # (Na seção Arquivos) o script não irá executar. Caso ela esteja presente, toda a saída padrão será descartada.
 
+# v3:
+# Nova seção: Casos (opcional)
+# Utilizada para diferenciar os pesos de cada um dos casos de teste. Até a versão 2, cada caso tinha peso igual, independente do teste a ser realizado por ele.
+# Caso não seja definida, todos os casos de teste da pasta "Casos/" serão testados. Caso seja definida, apenas os casos de teste listados serão testados (deve ser listado o mesmo nome da pasta).
+# Agora, caso poderá ter um peso diferente E cada caso poderá avaliar arquivos de forma diferente, dando notas diferentes.
+# Ex: Suponha um programa que deve gerar até 3 arquivos. Porém, um caso de teste gera só 2 (é esperado que isso ocorra). Agora, o script consegue diferenciar as avaliações
+# Assim, o caso de teste 1 pode avaliar 3 arquivos, o caso de teste 2 pode avaliar só 3, o caso de teste 3 avalia só 1... Ou até mesmo pode avaliar com pesos diferentes.
+# Para definir isso, basta definir o peso do caso e em seguida colocar "=X", onde X é o "nome do grupo" (sem esss sufixo, considera a seção "Arquivos" normalmente). Abaixo segue um exemplo:
+#
+# Casos
+#    01=5.0
+#    02=5.0=1
+#
+# Arquivos1
+#    saida.txt=5.0
+#    outro_arquivo=5.0
+# Com as duas seções acima definidas, o caso de teste 1 vale 5 de (5+5) pontos e avalia o arquivo saida.txt (como definido abaixo). Já o caso 2, também vale 5 de (5+5) pontos, porém avalia 2 arquivos diferentes.
+# Para dar pesos diferentes a casos que avaliam o mesmo grupo de arquivos, basta definir a seção Casos sem o sufixo.
+# Caso a seção não seja definida, todos os casos são avaliados e receberão o mesmo peso na nota final.
+
 
 
 Arquivos

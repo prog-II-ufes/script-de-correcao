@@ -12,11 +12,13 @@ DIR_INCLUDES=Includes
 
 declare -A pesos_arquivos=()
 declare -A pesos_testes=()
+declare -A pesos_casos=()
 declare -A notas_testes=()
 declare -A notas_alunos=()
 declare -A stats_alunos=()
 declare -A nota_final_aluno=()
 declare -A string_nota_bc_aluno=()
+declare -A grupo_arquivos_casos=()
 
 ARQUIVO_JSON_SAIDA="saida.json"
 JSON_SAIDA=""
@@ -28,8 +30,11 @@ REDIRECT_STDOUT=true
 CONTINUE_RESULTS=false
 TERMINAL_OUTPUT_LOG=""
 peso_total_arquivos=0
+peso_total_casos=0
 config_file_names=()
 config_test_names=()
+config_casos_names=()
+modf_grupo_arquivos=""
 # config_bin_file_names=()
 nomes_alunos=()
 string_nota_bc=""
@@ -41,6 +46,7 @@ n_cases=0
 n_linkings=0
 TIMEOUT=5
 ARQ_ALUNO_SAIDA="resultado.txt"
+num_total_arquivos=0
 
 echo_e_salva_log() {
     echo -e "$1"
@@ -115,8 +121,12 @@ le_arq_config () {
         while IFS= read -r line
         do
             line=$(echo -e $line | sed -E 's/[ \n\t\r]//g' ) #Tira espaços, \n, \t, \r de $line
-            if test "$line" == "Arquivos"; then
+            if [[ "$line" == "Arquivos"* ]]; then
                 config_section=1
+                modf_grupo_arquivos=""
+                if [[ "$line" != "Arquivos" ]]; then
+                    modf_grupo_arquivos=${line:8}
+                fi
                 continue
             elif test "$line" == "Validações"; then
                 config_section=2
@@ -128,6 +138,9 @@ le_arq_config () {
                 continue
             elif test "$line" == "Nota"; then
                 config_section=4
+                continue
+            elif test "$line" == "Casos"; then
+                config_section=5
                 continue
             elif test "$line" == "InterfaceFixa"; then
                 config_section=0
@@ -159,10 +172,20 @@ le_arq_config () {
             if [[ ! -z "$line" ]]; then
                 if test $config_section == 1; then
                     readarray -d = -t lines < <(printf '%s' "$line") #https://unix.stackexchange.com/a/519917
-                    if [[ ! " ${config_file_names[*]} " =~ " ${lines[0]} " ]]; then
-                        config_file_names+=(${lines[0]})
+                    if [[ "$modf_grupo_arquivos" == "" ]]; then
+                        if [[ ! " ${config_file_names[*]} " =~ " ${lines[0]} " ]]; then
+                            config_file_names+=(${lines[0]})
+                        fi
+                    else
+                        if [[ ! " ${config_file_names[*]} " =~ " ${modf_grupo_arquivos},${lines[0]} " ]]; then
+                            config_file_names+=($modf_grupo_arquivos,${lines[0]})
+                        fi
                     fi
-                    pesos_arquivos+=([${lines[0]}]=${lines[1]})
+                    if [[ "$modf_grupo_arquivos" == "" ]]; then
+                        pesos_arquivos+=([${lines[0]}]=${lines[1]})
+                    else
+                        pesos_arquivos+=([$modf_grupo_arquivos,${lines[0]}]=${lines[1]})
+                    fi                
                 elif test $config_section == 2; then
                     readarray -d = -t lines < <(printf '%s' "$line")
                     if [[ ! " ${config_test_names[*]} " =~ " ${lines[0]} " ]]; then
@@ -176,6 +199,18 @@ le_arq_config () {
                     fi
                 elif test $config_section == 4; then
                     string_nota_bc=$line
+                elif test $config_section == 5; then
+                    readarray -d = -t lines < <(printf '%s' "$line")
+                    if [[ ! " ${config_casos_names[*]} " =~ " ${lines[0]} " ]]; then
+                        config_casos_names+=(${lines[0]})
+                    fi
+                    pesos_casos+=([${lines[0]}]=${lines[1]})
+                    if [[ ${#lines[@]} > 2 ]]; then
+                        grupo_arquivos_casos+=([${lines[0]}]=${lines[2]})
+                    else
+                        grupo_arquivos_casos+=([${lines[0]}]="")
+                    fi
+
                 fi
             fi
         done < <(grep . "${CONFIG_FILE}")
@@ -202,6 +237,25 @@ le_arq_config () {
         exit 1
     fi
 
+    if [[ -z ${config_casos_names} ]]; then
+        NUM_CASES=$(find "$DIR_GAB_CASOS"/* -maxdepth 0 -type d | wc -l)
+        peso_casos=$(echo "scale=2; 1 / $NUM_CASES" | bc)
+        for DIR_CASE in "$DIR_GAB_CASOS"/*; do
+            # readarray -d = -t lines < <(printf '%s' "$DIR_CASES")
+            line="${DIR_CASE##*/}"
+            config_casos_names+=($line)
+            pesos_casos+=([$line]=$peso_casos)
+        done
+    else
+        for DIR_CASE in "$DIR_GAB_CASOS"/*; do
+            line="${DIR_CASE##*/}"
+            if [[ ! " ${config_casos_names[*]} " =~ " $line " ]]; then
+                config_casos_names+=($line)
+                pesos_casos+=([$line]=0)
+            fi
+        done
+    fi
+
     if [[ -z "$string_nota_bc" ]]; then
         string_nota_bc="0"
         for value in "${!pesos_testes[@]}"
@@ -210,8 +264,12 @@ le_arq_config () {
         done
     fi
 
-    for peso in "${pesos_arquivos[@]}"; do
-        peso_total_arquivos=$(echo "scale=2; $peso_total_arquivos + $peso" | bc)
+    # for peso in "${pesos_arquivos[@]}"; do
+    #     peso_total_arquivos=$(echo "scale=2; $peso_total_arquivos + $peso" | bc)
+    # done
+
+    for peso in "${pesos_casos[@]}"; do
+        peso_total_casos=$(echo "scale=2; $peso_total_casos + $peso" | bc)
     done
 
     # echo ${config_file_names[@]}
@@ -226,8 +284,10 @@ calcula_nota_final() {
         string_nota_bc_aluno[$nome_aluno]=$string_nota_bc
         for value in "${config_test_names[@]}"
         do
-            string_nota_bc_aluno[$nome_aluno]=${string_nota_bc_aluno[$nome_aluno]//$value/(${notas_testes[$nome_aluno,$value]})}
-        done
+#             string_nota_bc_aluno[$nome_aluno]=${string_nota_bc_aluno[$nome_aluno]//$value/(${notas_testes[$nome_aluno,$value]})}
+            replaceString="s/\<${value}\>/(${notas_testes[$nome_aluno,$value]})/"
+            string_nota_bc_aluno[$nome_aluno]=$(echo ${string_nota_bc_aluno[$nome_aluno]} | sed $replaceString)
+       done
         # echo $string_nota_bc
         nota_final_aluno[$nome_aluno]=$(echo "scale=2; ${string_nota_bc_aluno[$nome_aluno]}" | bc -l)
     # done
@@ -242,7 +302,7 @@ cria_arquivo_resultado_aluno() {
     echo "Pastas Linkadas Corretamente: ${stats_alunos[$nome_aluno,linkagens_corretas]} de ${#config_test_names[@]}" >> $ARQ_ALUNO
     for nome_teste in ${config_test_names[@]}; do
         echo "Teste $nome_teste" >> $ARQ_ALUNO
-        num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
+        # num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
         if [ "$IGNORE_RESULTS" = "false" ]; then
             echo "  - Resultados corretos: ${stats_alunos[$nome_aluno,$nome_teste,saidas_certas]} de $num_total_arquivos" >> $ARQ_ALUNO
         fi
@@ -293,7 +353,7 @@ imprime_resultados_e_cria_csv() {
 
             header_csv_str=$header_csv_str",Resultado $nome_teste"
 
-            num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
+            # num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
 
             if [ "$IGNORE_RESULTS" = "false" ]; then
                 echo_e_salva_log "    - Resultados corretos: ${stats_alunos[$nome_aluno,$nome_teste,saidas_certas]} de $num_total_arquivos"
@@ -304,7 +364,7 @@ imprime_resultados_e_cria_csv() {
 
             fi
 
-            echo_e_salva_log "    - Nota de $nome_aluno para o teste $nome_teste: ${notas_testes[$nome_aluno,$nome_teste]}"
+            echo_e_salva_log "\t   - Nota de $nome_aluno para o teste $nome_teste: ${notas_testes[$nome_aluno,$nome_teste]}"
 
             content_csv_str=$content_csv_str",${notas_testes[$nome_aluno,$nome_teste]}"
         done
@@ -575,7 +635,7 @@ executa_aluno() {
     n_folders_to_compile=${#pesos_testes[@]} # Completo é incluso por padrão na leitura das configurações, mas tem peso 0
     n_tests=$(( $n_folders_to_compile * $n_cases ))
     # echo $peso_total_arquivos
-    nota_max_por_teste=$(echo "scale=2; $n_cases * $peso_total_arquivos" | bc )
+    # nota_max_por_teste=$(echo "scale=2; $n_cases * $peso_total_arquivos" | bc )
 
     while IFS= read -r -d '' STUDENT_ANSWER_FOLDER; do
         if [ -d "$STUDENT_ANSWER_FOLDER" ]; then
@@ -595,6 +655,7 @@ executa_aluno() {
             echo_e_salva_log "#######################################\n"
 
             nomes_alunos+=($student_name)
+            num_total_arquivos=0
 
             if [ -f ${DIR_RESULTADOS}/$student_name/$ARQ_ALUNO_SAIDA ] && [ $CONTINUE_RESULTS == true ]; then
                 echo_e_salva_log "  - Configuração 'ContinuaAnalise' ligada e pasta $student_name já foi processada. Passando para o próximo aluno..."
@@ -726,6 +787,9 @@ executa_aluno() {
                 echo_e_salva_log "   - Copiando os $DIR_GAB_CASOS de teste para a pasta $FILE_NAME_FOLDER"
                 cp -r $DIR_GAB_CASOS $FILE_NAME_FOLDER
 
+                #Apaga saída do professor
+                find "$FILE_NAME_FOLDER" -type f -wholename "*saida/*" -exec rm {} \;
+
                 if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f -name "*.h" | read; then
                     if find "$DIR_GAB_INCLUDES" -maxdepth 1 -type f -name "*.h" | read; then
 
@@ -735,19 +799,19 @@ executa_aluno() {
                             echo_e_salva_log "   - Copiando os $DIR_GAB_INCLUDES/*.o do professor para a pasta $FILE_NAME_FOLDER"
 
                             cp $DIR_GAB_OBJ/*.o $FILE_NAME_FOLDER
-                            echo_e_salva_log "   - Removendo o $src_file_name.o do professor da pasta $FILE_NAME_FOLDER"
+                            echo_e_salva_log "\t   - Removendo o $src_file_name.o do professor da pasta $FILE_NAME_FOLDER"
 
                             rm $FILE_NAME_FOLDER/$src_file_name.o
-                            echo_e_salva_log "   - Copiando o $STUDENT_ANSWER_FOLDER/$src_file_name.c do aluno para a pasta $FILE_NAME_FOLDER"
+                            echo_e_salva_log "\t   - Copiando o $STUDENT_ANSWER_FOLDER/$src_file_name.c do aluno para a pasta $FILE_NAME_FOLDER"
                             cp $STUDENT_ANSWER_FOLDER/$src_file_name.c $FILE_NAME_FOLDER
                         else
                             for filepath in "$DIR_GAB_OBJ/"*.o; do
                                 if [[ -f "$filepath" ]]; then
                                     filename=$(basename "$filepath" .o)
-                                    echo_e_salva_log "   - Copiando os $STUDENT_ANSWER_FOLDER/$filename.c do aluno para a pasta $FILE_NAME_FOLDER"
+                                    echo_e_salva_log "\t   - Copiando os $STUDENT_ANSWER_FOLDER/$filename.c do aluno para a pasta $FILE_NAME_FOLDER"
                                     cp $STUDENT_ANSWER_FOLDER/$filename.c $FILE_NAME_FOLDER
                                     if [[ "$filename" != "main" ]]; then
-                                        echo_e_salva_log "   - Copiando os $STUDENT_ANSWER_FOLDER/$filename.h do aluno para a pasta $FILE_NAME_FOLDER"
+                                        echo_e_salva_log "\t   - Copiando os $STUDENT_ANSWER_FOLDER/$filename.h do aluno para a pasta $FILE_NAME_FOLDER"
                                         cp $STUDENT_ANSWER_FOLDER/$filename.h $FILE_NAME_FOLDER
                                     fi
                                 fi
@@ -755,12 +819,19 @@ executa_aluno() {
                         fi
                     fi
                 fi
+                if [[ -f "$STUDENT_ANSWER_FOLDER/Makefile" ]]; then
+                    echo_e_salva_log "   - Copiando Makefile para $STUDENT_RESULT_FOLDER/$src_file_name"
+                    cp "$STUDENT_ANSWER_FOLDER/Makefile" $STUDENT_RESULT_FOLDER/$src_file_name
+                fi
             done
+
+
 
             declare -a student_extra_src_files
             aluno_tem_arquivo_completo_c_ou_h=false
             if [[ "$FIXED_INTERFACE" == false ]] ; then
                 echo_e_salva_log " - Copiando Arquivos Extras do Aluno:"
+
                 for filepath in "$STUDENT_ANSWER_FOLDER/"*.c; do
                     if [[ -f "$filepath" ]]; then
                         filename=$(basename "$filepath" .c)
@@ -779,9 +850,10 @@ executa_aluno() {
                         if [ "$found" = "false" ]; then
                             for src_file_path in "${config_test_names[@]}"; do
                                 if [[ $MAIN_AGRUPADA == false || $src_file_path == "main" || $src_file_path == "completo" ]]; then
-                                    echo_e_salva_log "   - Copiando $filepath para $STUDENT_RESULT_FOLDER/$src_file_path"
+                                    echo_e_salva_log "\t   - Copiando $filepath para $STUDENT_RESULT_FOLDER/$src_file_path"
                                     cp $filepath $STUDENT_RESULT_FOLDER/$src_file_path
                                 fi
+
                             done
                         fi
                     fi
@@ -794,13 +866,14 @@ executa_aluno() {
                             aluno_tem_arquivo_completo_c_ou_h=true
                         fi
                         found=false
-                        for gab_src_file in "$DIR_GAB_INCLUDES"/*.h; do
-                            gab_src_file=$(basename "$gab_src_file" .h)
+                        for gab_src_file in "$DIR_GAB_OBJ"/*.o; do
+                            gab_src_file=$(basename "$gab_src_file" .o)
                             if [[ "$gab_src_file" = "$filename" ]]; then
                                 found=true
                                 break
                             fi
                         done
+
                         if [ "$found" = "false" ]; then
                             for src_file_path in "${config_test_names[@]}"; do
                                 if [[ $MAIN_AGRUPADA == false || $src_file_path == "main" || $src_file_path == "completo" ]]; then
@@ -812,6 +885,17 @@ executa_aluno() {
                     fi
                 done
 
+                for src_file_path in "${config_test_names[@]}"; do
+                    if [[ $src_file_path == "completo" ]]; then
+                        find "$STUDENT_ANSWER_FOLDER" -mindepth 2 -type f \( -name "*.c" -o -name "*.h" -o -name "Makefile" \) -printf "%P\n" | while read filepath; do
+                            filename=$(basename "$filepath" .java)
+                            diretorio=$(dirname "$filepath")
+                            mkdir -p $STUDENT_RESULT_FOLDER/$src_file_path/$diretorio
+                            cp $STUDENT_ANSWER_FOLDER/$filepath $STUDENT_RESULT_FOLDER/$src_file_path/$filepath
+                            echo_e_salva_log "   - Copiando $filepath para $STUDENT_RESULT_FOLDER/$src_file_path"
+                        done
+                    fi
+                done
             fi
 
             if [[ $aluno_tem_arquivo_completo_c_ou_h == true ]]; then
@@ -839,15 +923,19 @@ executa_aluno() {
 
             cd $STUDENT_RESULT_FOLDER
             for src_file_dir in "${config_test_names[@]}"; do
-                echo "   - Compilando a pasta $src_file_dir do aluno, gerando os .o's"
+                echo_e_salva_log "\t   - Compilando a pasta $src_file_dir do aluno, gerando os .o's"
                 cd $src_file_dir
-                gcc -Wall -c *.c 2>> result_compilation.txt
+                if [[ -f "Makefile" ]]; then
+                    make objs 2>> result_compilation.txt
+                else
+                    gcc -Wall -c *.c 2>> result_compilation.txt
+                fi
                 if [ $? -ne 0 ]; then
-                    echo_e_salva_log "   - Erro de compilação! Verifique os arquivos da pasta $src_file_dir."
+                    echo_e_salva_log "\t   - Erro de compilação! Verifique os arquivos da pasta $src_file_dir."
                     compilation_errors=$(expr $compilation_errors + 1)
                 else
-                    echo_e_salva_log "   - Compilação dos arquivos do aluno na pasta $src_file_dir ok!"
-                    echo_e_salva_log "   - Arquivo de output gerado: $STUDENT_RESULT_FOLDER/$src_file_dir/result_compilation.txt"
+                    echo_e_salva_log "\t   - Compilação dos arquivos do aluno na pasta $src_file_dir ok!"
+                    echo_e_salva_log "\t   - Arquivo de output gerado: $STUDENT_RESULT_FOLDER/$src_file_dir/result_compilation.txt"
                     correct_compilations=$(expr $correct_compilations + 1)
                 fi
                 cd ../
@@ -868,11 +956,17 @@ executa_aluno() {
 
             linking_errors=0
             correct_linkings=0
+            cd $STUDENT_RESULT_FOLDER
             for src_file_dir in "${config_test_names[@]}"; do
                 echo_e_salva_log " - Pasta $src_file_dir:"
                 echo_e_salva_log "   - Gerando o binário prog linkando com o(s) arquivo(s) $src_file_dir/*.o"
+                cd $src_file_dir
+                if [[ -f "Makefile" ]]; then
+                    make all
+                else
+                    gcc -o prog *.o -lm 2>> result_linking.txt
 
-                gcc -o $STUDENT_RESULT_FOLDER/$src_file_dir/prog $STUDENT_RESULT_FOLDER/$src_file_dir/*.o -lm 2>> $STUDENT_RESULT_FOLDER/$src_file_dir/result_linking.txt
+                fi
                 if [ $? -ne 0 ]; then
                     echo_e_salva_log "   - Arquivos Linkados: Erro! Binário prog não gerado."
                     linking_errors=$(expr $linking_errors + 1)
@@ -881,7 +975,9 @@ executa_aluno() {
                     correct_linkings=$(expr $correct_linkings + 1)
                 fi
                 echo_e_salva_log "   - Arquivo de output gerado: $STUDENT_RESULT_FOLDER/$src_file_dir/result_linking.txt"
+                cd ../
             done
+            cd ../../
             if [ $linking_errors -gt 0 ] ; then
                 echo_e_salva_log " - Arquivos Linkados: Erro! $linking_errors arquivos com erros de linkagem."
             fi
@@ -904,12 +1000,40 @@ executa_aluno() {
                     sum_of_the_grades_of_all_cases=0.0
                     for DIR_CASE in "$DIR_CASES"/*; do
                         (( n_cases_folders++ ))
-                        sum_of_the_grades_of_current_case=0.0
-                        txt_out_files=$(find "$DIR_CASE/saida/" -type f -name "*.txt")
-                        if [ -n "$txt_out_files" ]; then
-                            rm -r $DIR_CASE/saida/*.txt
-                        fi
+
+                        unset pesos_arquivos_deste_caso
+                        declare -A pesos_arquivos_deste_caso
+                        # declare -A config_file_names_deste_caso
+
                         case_number=${DIR_CASE##*/}
+
+                        if [[ ${grupo_arquivos_casos[$case_number]} == "" ]]; then
+                            for key in "${!pesos_arquivos[@]}"; do
+                                if [[ ! "$key" =~ ([0-9],).* ]]; then
+                                    peso=${pesos_arquivos[$key]}
+                                    pesos_arquivos_deste_caso+=([$key]=${peso})
+                                fi
+                            done
+                        else 
+                            for key in "${!pesos_arquivos[@]}"; do
+                                if [[ "$key" =~ (${grupo_arquivos_casos[$case_number]},).* ]]; then
+                                    peso=${pesos_arquivos[$key]}
+                                    key2=${key##${grupo_arquivos_casos[$case_number]},}
+                                    pesos_arquivos_deste_caso+=([$key2]=${peso})
+                                fi
+                            done
+                        fi
+
+                        peso_total_arquivos=0.0
+                        for peso in "${pesos_arquivos_deste_caso[@]}"; do
+                            peso_total_arquivos=$(echo "scale=2; $peso_total_arquivos + $peso" | bc)
+                        done
+                        sum_of_the_grades_of_current_case=0.0
+                        txt_out_files=$(find "$DIR_CASE/saida/" -type f)
+                        if [ -n "$txt_out_files" ]; then
+                            rm -r $DIR_CASE/saida/*
+                        fi
+
                         echo_e_salva_log " - Pasta $src_file_dir / Caso $case_number:"
 
                         outputStdOut="${DIR_CASE}/saida/saida.txt"
@@ -978,17 +1102,19 @@ executa_aluno() {
                         # Percorre todos os arquivos
                         declare -A txts_corretos
 
-                        for key in "${!pesos_arquivos[@]}"; do
-                            if [[ "$key" == *".txt" ]]; then
+                        for key in "${!pesos_arquivos_deste_caso[@]}"; do
+#                             if [[ "$key" == *".txt" ]]; then
                                 txts_corretos["$key"]=0.0
-                            fi
+#                             fi
                         done
 
                         if [ "$IGNORE_RESULTS" = "false" ]; then
-                            for txt_file in "${config_file_names[@]}"; do
+                            for txt_file in "${!pesos_arquivos_deste_caso[@]}"; do
+                            (( num_total_arquivos++ ))
                                 gab_case_txt_file="$DIR_GAB_CASOS/$case_number/saida"/$txt_file
+                                filename=$(basename -- "$gab_case_txt_file")   # Get only the file name without the full path
                                 if [ -f "$gab_case_txt_file" ]; then         # Check if the file is a regular file (not a directory or special file)
-                                    filename=$(basename -- "$gab_case_txt_file")   # Get only the file name without the full path
+                                    
                                     txt_file_names+=("$filename")  # Add the file name to the array
                                     filename_no_ext="${filename%.*}"  # Get only the file name without the extension
                                     student_output_file=$DIR_CASE/saida/$filename
@@ -1011,56 +1137,127 @@ executa_aluno() {
                                         sed -i ':a; /./,$!{N;ba}; /^$/d' "$DIR_CASE_SAIDA/$output_professor_copy"
 
                                         # Open both files for reading
-                                        exec 3< "$DIR_CASE_SAIDA/$output_student_copy"
-                                        exec 4< "$DIR_CASE_SAIDA/$output_professor_copy"
+#                                         exec 3< "$DIR_CASE_SAIDA/$output_student_copy"
+#                                         exec 4< "$DIR_CASE_SAIDA/$output_professor_copy"
 
-                                        files_are_equal="true"
+                                        files_are_equal="false"
 
-                                        while true; do
-                                            # Read a line from each file
-                                            read -r line1 <&3
-                                            read -r line2 <&4
+                                        echo_e_salva_log "    - Comparando $filename do aluno e do gabarito..."
 
-                                            # Check if we reached the end of both files
-                                            if [[ -z "$line1" && -z "$line2" ]]; then
-                                                break
+                                        diff -q "$DIR_CASE_SAIDA/$output_student_copy" "$DIR_CASE_SAIDA/$output_professor_copy" >/dev/null 2>/dev/null
+                                        if [ "$?" == "0" ]; then
+                                            echo_e_salva_log "\t - As saídas coincidem!"
+                                            files_are_equal="true"
+                                        else
+                                            diff -q -b "$DIR_CASE_SAIDA/$output_student_copy" "$DIR_CASE_SAIDA/$output_professor_copy" >/dev/null 2>/dev/null
+                                            if [ "$?" == "0" ]; then
+                                                echo_e_salva_log "\t - As saídas coincidem, exceto no número de espaços em branco"
+                                                files_are_equal="true"
+                                            else
+                                                diff -q -b -B "$DIR_CASE_SAIDA/$output_student_copy" "$DIR_CASE_SAIDA/$output_professor_copy" >/dev/null 2>/dev/null
+                                                if [ "$?" == "0" ]; then
+                                                    echo_e_salva_log "\t - As saídas coincidem se desconsiderarmos o número de espaços em branco e linhas em branco"
+                                                    files_are_equal="true"
+                                                else
+                                                    diff -q -i -b -B "$DIR_CASE_SAIDA/$output_student_copy" "$DIR_CASE_SAIDA/$output_professor_copy" >/dev/null 2>/dev/null
+                                                    if [ "$?" == "0" ]; then
+                                                        echo_e_salva_log "\t - As saídas coincidem se ignorarmos maiúsculas/minúsculas, e desconsiderarmos o número de espaços em branco e linhas em branco"
+                                                        files_are_equal="true"
+                                                    else
+                                                        diff -q -b -B -w "$DIR_CASE_SAIDA/$output_student_copy" "$DIR_CASE_SAIDA/$output_professor_copy" >/dev/null 2>/dev/null
+                                                        if [ "$?" == "0" ]; then
+                                                            echo_e_salva_log "\t - As saídas coincidem se desconsiderarmos todos os espaços em branco do arquivo"
+                                                            files_are_equal="true"
+                                                        else
+                                                            diff -q -i -b -B -w "$DIR_CASE_SAIDA/$output_student_copy" "$DIR_CASE_SAIDA/$output_professor_copy" >/dev/null 2>/dev/null
+                                                            if [ "$?" == "0" ]; then
+                                                                echo_e_salva_log "\t - As saídas coincidem se ignoramos maíusculas/minúsculas e desconsiderarmos todos os espaços em branco do arquivo"
+                                                                files_are_equal="true"
+                                                            fi
+                                                        fi
+                                                    fi
+                                                fi
                                             fi
+                                        fi
 
-                                            # Ignore blank lines and continue the loop
-                                            if [[ -z "$line1" && -z "$line2" ]]; then
-                                                continue
-                                            fi
+                                        if [[ "$files_are_equal" == "false" ]]; then
+                                            readarray -t arq1 < "$DIR_CASE_SAIDA/$output_student_copy"
+                                            readarray -t arq2 < "$DIR_CASE_SAIDA/$output_professor_copy"
+#                                             echo ${arq1[@]}
+#                                             echo ${arq2[@]}
 
-                                            # Compare lines and check for differences
-                                            if [[ "$line1" != "$line2" ]]; then
+                                            files_are_equal="true"
+
+                                            if [[ ${#arq1[@]} == ${#arq2[@]} ]]; then
+
+                                                for (( i=0; i<${#arq1[@]}; i++ )); do
+
+                                                    readarray -d ";" -t tokens1 < <(printf '%s' "${arq1[i]}")
+                                                    readarray -d ";" -t tokens2  < <(printf '%s' "${arq2[i]}")
+
+                                                    if [[ ${#tokens1[@]} == ${#tokens2[@]} ]]; then
+
+                                                        for (( j=0; j<${#tokens1[@]}; j++ )); do
+
+                                                            if [[ ${tokens1[j]} =~ [R][$][\ ][0-9]+([.,][0-9]+)? ]]; then
+                                                                expressao=$( echo "${tokens1[j]:3} - ${tokens2[j]:3}" | sed 's/,/./g' )
+                                                                result=$(echo "scale=4; $expressao " | bc  )
+                                                                difference=$(echo "$result" | sed 's/-//' )
+                                                                check_tolerance=$(echo "scale=2; $difference <= $TOL " | bc )
+                                                                if [[ "$check_tolerance" == "0" ]]; then
+                                                                    files_are_equal="false"
+                                                                    break
+                                                                fi
+
+                                                            else
+                                                                if [[ ${tokens1[j]} != ${tokens2[j]} ]]; then
+                                                                    files_are_equal="false"
+                                                                    break
+                                                                fi
+                                                            fi
+
+                                                        done
+
+                                                    else
+                                                        files_are_equal="false"
+                                                        break
+                                                    fi
+
+                                                done
+                                            else
                                                 files_are_equal="false"
                                             fi
-                                        done
 
-                                        # Close file descriptors
-                                        exec 3<&-
-                                        exec 4<&-
+#                                             echo "Iguais"
+#                                             exit 1
+
+                                        fi
+
+
+
 
                                         if test "$files_are_equal" = "false"; then
                                             there_is_a_wrong_answer=true
-                                            echo_e_salva_log "   - Resultado para o $filename: Incorreto! Peso: 0.0"
+                                            echo_e_salva_log "\t - Resultado para o $filename: Incorreto! Peso: 0.0"
                                         else
                                             txts_corretos[$txt_file]=1.0
-                                            echo_e_salva_log "   - Resultado para o $filename: Ok! Peso: ${pesos_arquivos[$txt_file]}"
+                                            echo_e_salva_log "\t - Resultado para o $filename: Ok! Peso: ${pesos_arquivos_deste_caso[$txt_file]}"
                                             (( n_correct_answers++ ))
                                         fi
 
                                         rm "$DIR_CASE_SAIDA/$output_student_copy"
                                         rm "$DIR_CASE_SAIDA/$output_professor_copy"
                                     else
-                                        echo_e_salva_log "   - O aluno não gerou o arquivo de saída $DIR_CASE_SAIDA/$filename, considerando resultado incorreto! Peso: 0.0"
+                                        echo_e_salva_log "\t - O aluno não gerou o arquivo de saída $DIR_CASE_SAIDA/$filename, considerando resultado incorreto! Peso: 0.0"
                                         there_is_a_wrong_answer=true
                                     fi
+                                else
+                                    echo_e_salva_log "\t - Resultado para o $filename: Incorreto! Peso: 0.0"
                                 fi
                             done
 
-                            for txt_file in "${!pesos_arquivos[@]}"; do
-                                sum_of_the_grades_of_current_case=$(echo "scale=2; $sum_of_the_grades_of_current_case + ${txts_corretos["$txt_file"]} * ${pesos_arquivos["$txt_file"]}" | bc)
+                            for txt_file in "${!pesos_arquivos_deste_caso[@]}"; do
+                                sum_of_the_grades_of_current_case=$(echo "scale=2; $sum_of_the_grades_of_current_case + ${txts_corretos["$txt_file"]} * ${pesos_arquivos_deste_caso["$txt_file"]} " | bc)
                             done
                         else
                             sum_of_the_grades_of_current_case=$peso_total_arquivos
@@ -1074,13 +1271,18 @@ executa_aluno() {
                         fi
                         desconto_valgrind_atual=$(echo "scale=2; 100*(1.0 - $multiplicador)" | bc)
                         sum_of_the_grades_of_current_case_minus_valgrind=$(echo "scale=2; $sum_of_the_grades_of_current_case * $multiplicador" | bc)
-                        echo_e_salva_log "   - Nota para o Caso (soma dos pesos): $sum_of_the_grades_of_current_case (soma total) - $desconto_valgrind_atual% (desconto do valgrind) = $sum_of_the_grades_of_current_case_minus_valgrind de $peso_total_arquivos pontos."
-                        sum_of_the_grades_of_all_cases=$(echo "scale=2; $sum_of_the_grades_of_all_cases + $sum_of_the_grades_of_current_case_minus_valgrind" | bc)
+                        echo_e_salva_log "    - Soma dos pesos dos arquivos: $sum_of_the_grades_of_current_case (soma total) = $sum_of_the_grades_of_current_case_minus_valgrind de $peso_total_arquivos pontos."
+                        
+                        nota_deste_caso=$(echo "scale=2; $sum_of_the_grades_of_current_case_minus_valgrind * ${pesos_casos["$case_number"]} "| bc)
+                        peso_maximo_caso=$(echo "scale=2; $peso_total_arquivos * ${pesos_casos["$case_number"]} "| bc)
+                        echo_e_salva_log "\t - Nota para o Caso (máximo: $peso_maximo_caso): $nota_deste_caso "
+
+                        sum_of_the_grades_of_all_cases=$(echo "scale=2; $sum_of_the_grades_of_all_cases + $nota_deste_caso" | bc)
 
                     done
 
-                    nota_para_pasta=$(echo "scale=2; $sum_of_the_grades_of_all_cases / ($n_cases_folders * $peso_total_arquivos)" | bc)
-                    nota_max_pasta=$(echo "scale=2; $n_cases_folders * $peso_total_arquivos" | bc)
+                    nota_para_pasta=$(echo "scale=2; $sum_of_the_grades_of_all_cases / ($peso_total_arquivos * $peso_total_casos)" | bc)
+                    nota_max_pasta=$(echo "scale=2; $peso_total_arquivos * $peso_total_casos" | bc)
                     nota_perc_para_pasta=$(echo "scale=2; $nota_para_pasta * 100" | bc)
 
 
@@ -1100,7 +1302,7 @@ executa_aluno() {
 
         fi
         
-    done < <(find "$DIR_RESPOSTAS" -mindepth 1 -type d -print0 | sort -z)
+    done < <(find "$DIR_RESPOSTAS" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
 }
 
 if [[ $1 == "--professor" ]]; then
@@ -1113,9 +1315,9 @@ if [[ $RUN_PROFESSOR_SCRIPT == true ]]; then
     executa_professor
 else
     executa_aluno
-    # calcula_nota_final
+    #calcula_nota_final
     imprime_resultados_e_cria_csv
-    salva_json_saida
+    #salva_json_saida
     # le_saida_script_correcao
 fi
 
