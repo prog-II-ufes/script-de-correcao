@@ -625,7 +625,10 @@ executa_aluno() {
     for headerpath in "$DIR_INCLUDES/"*.h; do
         if [[ -f "$headerpath" ]]; then
             # Extract just the file name without the path and extension
-            (( n_files++ ))
+            cFilePath="${headerpath%.*}.c"
+            if [[ ! -f "$cFilePath" ]]; then
+                (( n_files++ ))
+            fi
         fi
     done
 
@@ -1108,9 +1111,11 @@ executa_aluno() {
 #                             fi
                         done
 
+                        num_total_arquivos=$(( $n_cases * ${#pesos_arquivos[@]} ))
+
                         if [ "$IGNORE_RESULTS" = "false" ]; then
                             for txt_file in "${!pesos_arquivos_deste_caso[@]}"; do
-                            (( num_total_arquivos++ ))
+                            
                                 gab_case_txt_file="$DIR_GAB_CASOS/$case_number/saida"/$txt_file
                                 filename=$(basename -- "$gab_case_txt_file")   # Get only the file name without the full path
                                 if [ -f "$gab_case_txt_file" ]; then         # Check if the file is a regular file (not a directory or special file)
