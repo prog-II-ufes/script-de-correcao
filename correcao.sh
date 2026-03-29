@@ -451,7 +451,7 @@ executa_professor() {
                 gab_src_files_names+=("$raw_file_name")
                 src=$DIR_GAB_SRC/$raw_file_name.c
                 out=$DIR_GAB_OBJ/$raw_file_name.o
-                output=$(gcc -Wall -c $src -o $out 2>&1)
+                output=$(gcc -std=gnu17 -Wall -Werror=implicit-function-declaration -c $src -o $out 2>&1)
                 if [ $? -ne 0 ]; then
                     echo_e_salva_log "   - Erro de compilação! Verifique se o arquivo $src está correto."
                     echo $TERMINAL_OUTPUT_LOG >> "log.txt"
@@ -460,7 +460,7 @@ executa_professor() {
             # fi
         done
 
-        output=$(gcc -Wall -o $DIR_GAB_OBJ/prog $DIR_GAB_OBJ/*.o -lm 2>&1)
+        output=$(gcc -std=gnu17 -Werror=implicit-function-declaration -Wall -o $DIR_GAB_OBJ/prog $DIR_GAB_OBJ/*.o -lm 2>&1)
         if [ $? -ne 0 ]; then
             echo_e_salva_log "   - Arquivos Linkados: Erro! Binário prog não gerado."
             echo $TERMINAL_OUTPUT_LOG >> "log.txt"
@@ -497,7 +497,7 @@ executa_professor() {
                     src_files_escondidas+="-include $file "
                 fi
             done < <(find "$DIR_GAB_SRC" -type f -name "*.c" -print0)
-            output=$(gcc -Wall -c ${src_files_escondidas[@]} $DIR_GAB_SRC/main.c -o $DIR_GAB_OBJ/main.o 2>&1)
+            output=$(gcc -std=gnu17 -Wall -Werror=implicit-function-declaration -c ${src_files_escondidas[@]} $DIR_GAB_SRC/main.c -o $DIR_GAB_OBJ/main.o 2>&1)
 
 
             if [ $? -ne 0 ]; then
@@ -625,10 +625,7 @@ executa_aluno() {
     for headerpath in "$DIR_INCLUDES/"*.h; do
         if [[ -f "$headerpath" ]]; then
             # Extract just the file name without the path and extension
-            cFilePath="${headerpath%.*}.c"
-            if [[ ! -f "$cFilePath" ]]; then
-                (( n_files++ ))
-            fi
+            (( n_files++ ))
         fi
     done
 
@@ -793,7 +790,8 @@ executa_aluno() {
                 #Apaga saída do professor
                 find "$FILE_NAME_FOLDER" -type f -wholename "*saida/*" -exec rm {} \;
 
-                if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f -name "*.h" | read; then
+                # echo "$STUDENT_ANSWER_FOLDER"
+                if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f \( -iname '*.c' -o -iname '*.h' \) | read; then
                     if find "$DIR_GAB_INCLUDES" -maxdepth 1 -type f -name "*.h" | read; then
 
                         if [[ "$src_file_name" != "completo" ]] ; then
@@ -827,8 +825,6 @@ executa_aluno() {
                     cp "$STUDENT_ANSWER_FOLDER/Makefile" $STUDENT_RESULT_FOLDER/$src_file_name
                 fi
             done
-
-
 
             declare -a student_extra_src_files
             aluno_tem_arquivo_completo_c_ou_h=false
@@ -931,7 +927,7 @@ executa_aluno() {
                 if [[ -f "Makefile" ]]; then
                     make objs 2>> result_compilation.txt
                 else
-                    gcc -Wall -c *.c 2>> result_compilation.txt
+                    gcc -std=gnu17 -Wall -Werror=implicit-function-declaration -c *.c 2>> result_compilation.txt
                 fi
                 if [ $? -ne 0 ]; then
                     echo_e_salva_log "\t   - Erro de compilação! Verifique os arquivos da pasta $src_file_dir."
@@ -967,7 +963,7 @@ executa_aluno() {
                 if [[ -f "Makefile" ]]; then
                     make all
                 else
-                    gcc -o prog *.o -lm 2>> result_linking.txt
+                    gcc -std=gnu17 -Werror=implicit-function-declaration -o prog *.o -lm 2>> result_linking.txt
 
                 fi
                 if [ $? -ne 0 ]; then
@@ -1043,7 +1039,7 @@ executa_aluno() {
                         input_file="${DIR_CASE}/entrada.txt"
 
                         binary=$STUDENT_RESULT_FOLDER/$src_file_dir/prog
-                        valgrind_args="--leak-check=full --log-file=$DIR_CASE/result_valgrind.txt"
+                        valgrind_args="--leak-check=full --gen-suppressions=yes --show-reachable=yes --read-var-info=yes --track-origins=yes --log-file=$DIR_CASE/result_valgrind.txt"
 
                         if [ "$IGNORE_VALGRIND" = "false" ]; then
                             if [ "$REDIRECT_STDOUT" = true ]; then
@@ -1111,11 +1107,9 @@ executa_aluno() {
 #                             fi
                         done
 
-                        num_total_arquivos=$(( $n_cases * ${#pesos_arquivos[@]} ))
-
                         if [ "$IGNORE_RESULTS" = "false" ]; then
                             for txt_file in "${!pesos_arquivos_deste_caso[@]}"; do
-                            
+                            (( num_total_arquivos++ ))
                                 gab_case_txt_file="$DIR_GAB_CASOS/$case_number/saida"/$txt_file
                                 filename=$(basename -- "$gab_case_txt_file")   # Get only the file name without the full path
                                 if [ -f "$gab_case_txt_file" ]; then         # Check if the file is a regular file (not a directory or special file)
