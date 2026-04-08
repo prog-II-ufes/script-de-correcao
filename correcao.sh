@@ -781,6 +781,8 @@ executa_aluno() {
             ##########################################
             echo_e_salva_log "\nCOPIANDO OS ARQUIVOS PARA A PASTA DE RESULTADO DO ALUNO:"
 
+
+
             for src_file_name in "${config_test_names[@]}"; do
                 echo_e_salva_log " - Pasta $src_file_name:"
                 FILE_NAME_FOLDER=$STUDENT_RESULT_FOLDER/$src_file_name
@@ -789,6 +791,10 @@ executa_aluno() {
 
                 #Apaga saída do professor
                 find "$FILE_NAME_FOLDER" -type f -wholename "*saida/*" -exec rm {} \;
+
+                # if [[ "$src_file_name" != "completo"  ]] ; then
+
+                # fi
 
                 # echo "$STUDENT_ANSWER_FOLDER"
                 if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f \( -iname '*.c' -o -iname '*.h' \) | read; then
@@ -817,6 +823,19 @@ executa_aluno() {
                                     fi
                                 fi
                             done
+                        fi
+                    else
+                        if [[ "$src_file_name" == "completo" ]] ; then
+                            if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f -name "*.h" | read; then
+                                for filepath in "$STUDENT_ANSWER_FOLDER/"*.h; do
+                                    cp -f $filepath $FILE_NAME_FOLDER
+                                done
+                            fi
+                            if find "$STUDENT_ANSWER_FOLDER" -maxdepth 1 -type f -name "*.c" | read; then
+                                for filepath in "$STUDENT_ANSWER_FOLDER/"*.c; do
+                                    cp -f $filepath $FILE_NAME_FOLDER
+                                done
+                            fi
                         fi
                     fi
                 fi
