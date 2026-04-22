@@ -302,7 +302,7 @@ cria_arquivo_resultado_aluno() {
     echo "Pastas Linkadas Corretamente: ${stats_alunos[$nome_aluno,linkagens_corretas]} de ${#config_test_names[@]}" >> $ARQ_ALUNO
     for nome_teste in ${config_test_names[@]}; do
         echo "Teste $nome_teste" >> $ARQ_ALUNO
-        # num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
+        num_total_arquivos=$(( $n_cases * ${#config_file_names[@]} ))
         if [ "$IGNORE_RESULTS" = "false" ]; then
             echo "  - Resultados corretos: ${stats_alunos[$nome_aluno,$nome_teste,saidas_certas]} de $num_total_arquivos" >> $ARQ_ALUNO
         fi
